@@ -1,0 +1,135 @@
+---
+title: "NOAA Storm Data Analysis"
+
+output: html_document
+---
+
+
+# Synopsis    
+
+  
+The goal of this report is analyze the health effects and economic impacts of weather events on the population in the USA.  Data from the NOAA Storm Database was used to generate the insights.  
+
+For the sampled period (1950 - 2011), Toronados caused the most fatalities and injuries and were also responsible for the most property damage. Excessive heat was the next greatest contributor to fatalities. Thunderstorm wind and flash flooding were also significant contributors to property damage.  Further details are included in the report below.
+
+
+
+# Data Processing  
+     
+
+Data from the NOAA Storm Database is used to generate these insights:
+```{r, echo=TRUE}
+url <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+destfile <- "download.csv"
+storm_original <- read.csv("download.csv")
+```
+
+## Data Processing - Type of Events most harmful to public health   
+     
+To understand what types of events are most harmful to public health, I'll start by looking at the correlation of the following variables:
+
+- Events (with beginning date)
+- Fatalities
+- Injuries
+
+```{r sh dataframe, echo=TRUE}
+library(dplyr)
+library(ggplot2)
+
+sh <- select (storm_original, BGN_DATE, EVTYPE, FATALITIES, INJURIES)
+
+#Converting date to correct format
+library(lubridate)
+sh$BGN_DATE <- mdy_hms(sh$BGN_DATE)
+
+```
+
+Next I want to compare the number of injuries that result from different event types, focusing on the top 10:
+
+```{r Weather v Injuries, echo=TRUE}
+
+sh1 <- sh %>%  # specify dataframe
+        group_by(EVTYPE)   %>%
+        summarize(i_sum = sum(INJURIES, na.rm = TRUE)) %>%
+        arrange(desc(i_sum))
+
+sh10 <- sh1[1:10, ]
+
+sh10
+
+```
+
+
+Next I want to compare the number of fatalities that result from different event types, focusing on the top 10:
+
+```{r Weather v Fatalities, echo=TRUE}
+
+shf <- sh %>%  # specify dataframe
+        group_by(EVTYPE)   %>%
+        summarize(f_sum = sum(FATALITIES, na.rm = TRUE)) %>%
+        arrange(desc(f_sum))
+
+sh10f <- shf[1:10, ]
+
+sh10f
+
+```
+
+## Data Processing - Types of events with greatest economic consequences
+     
+To understand events with the greatest economic consequences we'll compare events with economic indicators sugch as
+
+- Events (with beginning date)
+- Property Damage. Note: crop damage will not be looked at for this analysis
+
+
+```{r, echo=TRUE}
+
+se <- select (storm_original, BGN_DATE, EVTYPE, PROPDMG, CROPDMG)
+
+#Converting date to correct format
+se$BGN_DATE <- mdy_hms(se$BGN_DATE)
+```
+
+Finally I want to compare the economic impact of property damage resulting from different weather event types, focusing on the top 10:
+
+```{r Weather v Propert Damage, echo=TRUE}
+
+sep <- se %>%  # specify dataframe
+        group_by(EVTYPE)   %>%
+        summarize(p_sum = sum(PROPDMG, na.rm = TRUE)) %>%
+        arrange(desc(p_sum))
+
+sep10 <- sep[1:10, ]
+sep10$p_sum <- sep10$p_sum/1000000
+
+sep10
+
+```
+
+
+# Results     
+
+When looking at Fatalities, tornados have caused by far the most fatalies over any other weather event.  Excessive heat was the next leading cause of death for the sampled period.     
+     
+
+```{r Fatality Plot, echo=TRUE}
+ggplot(data=sh10f, aes(x=EVTYPE, y=f_sum)) + geom_bar(stat="identity") + coord_flip() +ylab("Fatalities") + xlab("Top 10 Weather Events") + ggtitle("Fatalities")
+```
+     
+When looking at injuries, toronados accounted for significantly more injuries than the rest of the events over the sampled period.      
+     
+
+```{r Injury Plot, echo=TRUE}
+ggplot(data=sh10, aes(x=EVTYPE, y=i_sum)) + geom_bar(stat="identity") + coord_flip() +ylab("Injuries") + xlab("Top 10 Weather Events") + ggtitle("Injuries")
+```
+     
+     
+Focusing on economic damage, toronadoes, thunderstorm wind and flash flooding were the three largest contirbutors to weather related property damage for the sampled period.     
+     
+
+```{r Property Damage Plot, echo=TRUE}
+ggplot(data=sep10, aes(x=EVTYPE, y=p_sum)) + geom_bar(stat="identity") + coord_flip() +ylab("Property Damage (Billions USD)") + xlab("Top 10 Weather Events") + ggtitle("Property Damage")
+```
+     
+          
